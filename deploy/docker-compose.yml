@@ -1,0 +1,28 @@
+# 用法（在部署包根目录）：
+#   1. cp deploy/.env.example .env  &&  填 DECART_API_KEY
+#   2. docker compose -f deploy/docker-compose.yml up -d --build
+# 应用只监听 127.0.0.1:5180，由外层 nginx/Caddy 或云负载均衡做 HTTPS。
+services:
+  shanyi:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: shanyi-tryon:latest
+    container_name: shanyi
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5180
+    ports:
+      - "127.0.0.1:5180:5180"
+    # 容器内直接跑 HTTPS 时改成：
+    # environment:
+    #   TLS_CERT: /certs/fullchain.pem
+    #   TLS_KEY:  /certs/privkey.pem
+    #   PORT: 443
+    # volumes:
+    #   - /etc/letsencrypt/live/YOUR_NAME:/certs:ro
+    # ports:
+    #   - "443:443"

@@ -1,0 +1,14 @@
+{
+  "name": "shanyi-ai-tryon",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "闪衣 · AI 实时试衣（静态页面 + Decart token 代理）",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

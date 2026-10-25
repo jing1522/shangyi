@@ -1,0 +1,25 @@
+# ---------- 密钥与环境变量：绝对不要提交 ----------
+.env
+.env.*
+!.env.example
+.env.local
+
+# ---------- 证书与私钥 ----------
+*.pem
+*.key
+*.pfx
+certs/
+
+# ---------- 依赖与构建产物 ----------
+node_modules/
+dist/
+*.log
+npm-debug.log*
+
+# ---------- 本机/工具产物 ----------
+.acl-recovery/
+*.zip
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
