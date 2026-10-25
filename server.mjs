@@ -27,11 +27,17 @@ async function loadApiKey() {
   } catch { /* 没有 .env.local */ }
   return '';
 }
+// 可以为空：公开部署时不内置 Key，由访问者在页面里填自己的（只存在他的浏览器里）
 const API_KEY = await loadApiKey();
-if (!API_KEY) {
-  console.error('[启动失败] 没有找到 DECART_API_KEY。请设置环境变量，或在同目录创建 .env.local：');
-  console.error('  DECART_API_KEY=dct_v1_xxxxxxxx');
-  process.exit(1);
+if (API_KEY) {
+  console.log('[key] 使用服务端配置的 DECART_API_KEY');
+} else {
+  console.log('[key] 服务端未配置 Key：访问者需在页面首次进入时填写自己的 Key');
+}
+
+// 只校验形状，绝不打印内容
+function isKeyShape(v) {
+  return typeof v === 'string' && /^dct_v1_[A-Za-z0-9_-]{8,}$/.test(v);
 }
 
 const MIME = {
@@ -60,10 +66,11 @@ function sendJson(res, status, data) {
 }
 
 // ---------- 换发短期 client token ----------
-async function mintToken() {
+// apiKey 可以是服务端的，也可以是访问者浏览器里那把（用完即弃，不落盘、不记日志）
+async function mintToken(apiKey) {
   const res = await fetch(DECART_TOKEN_URL, {
     method: 'POST',
-    headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({ expiresIn: TOKEN_TTL }),
   });
   const text = await res.text();
@@ -106,14 +113,25 @@ const handler = async (req, res) => {
   const { pathname } = url;
 
   if (pathname === '/api/health') {
-    return sendJson(res, 200, { ok: true, keyConfigured: true, tokenTtl: TOKEN_TTL, tls: USE_TLS });
+    return sendJson(res, 200, { ok: true, keyConfigured: Boolean(API_KEY), tokenTtl: TOKEN_TTL, tls: USE_TLS });
   }
 
   if (pathname === '/api/decart-token') {
     if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
+
+    // 优先用访问者自己在页面里填的 Key，其次才是服务端配置的
+    const fromClient = String(req.headers['x-decart-key'] || '').trim();
+    if (fromClient && !isKeyShape(fromClient)) {
+      return sendJson(res, 400, { error: 'bad key format', message: 'Key 应以 dct_v1_ 开头' });
+    }
+    const key = fromClient || API_KEY;
+    if (!key) {
+      return sendJson(res, 400, { error: 'no key', needKey: true, message: '请先在页面里填写自己的 Decart API Key' });
+    }
+
     try {
-      const data = await mintToken();
-      console.log(`[token] 已换发，有效期 ${TOKEN_TTL}s`);
+      const data = await mintToken(key);
+      console.log(`[token] 已换发（来源：${fromClient ? '访客自带' : '服务端'}），有效期 ${TOKEN_TTL}s`);
       return sendJson(res, 200, { apiKey: data.apiKey, expiresIn: TOKEN_TTL });
     } catch (err) {
       console.error('[token] 换发失败:', err.message);

@@ -16,20 +16,22 @@
 
 ## 快速开始
 
-前置：Node.js 20+，以及一个 [Decart](https://platform.decart.ai) API Key。
+前置：Node.js 20+，以及一个 [Decart](https://platform.decart.ai) API Key（免费注册即可获得）。
 
 ```bash
 git clone https://github.com/jing1522/shangyi.git
 cd shangyi
-
-# 写入密钥（该文件已被 .gitignore 忽略）
-echo "DECART_API_KEY=dct_v1_你的密钥" > .env.local
-
 npm start
 # 打开 http://127.0.0.1:5180
 ```
 
-首次打开会请求摄像头权限，允许即可。**必须通过 `http://127.0.0.1` 或 `https://` 访问**，`file://` 双击打开拿不到摄像头。
+首次打开会先让你**填一次 API Key**，它只保存在本机浏览器里。仓库里没有任何密钥，
+也不需要创建 `.env` 文件。
+
+> 想让所有访问者共用一把 Key（内网演示等）：`echo "DECART_API_KEY=dct_v1_..." > .env.local`，
+> 该文件已被 `.gitignore` 忽略。访客自带的 Key 仍然优先。
+
+`file://` 双击打开拿不到摄像头——必须走 `http://127.0.0.1` 或 `https://`。
 
 ## 目录结构
 
@@ -59,19 +61,20 @@ npm start
 
 ## 安全模型
 
-这是本项目最需要注意的一点。
+这个项目**不内置任何密钥**——仓库是公开的也不会有东西可偷。
 
-- 长期 API Key **只存在于服务端**（`.env.local` 或部署环境变量），浏览器里永远不出现
-- 前端每次点击“开始试衣”都向 `/api/decart-token` 换取一次 **300 秒有效的短期凭证**
-- 静态资源走白名单：只放行 `src/` 下的前端资源，隐藏文件与服务端脚本一律 404
-- 仓库自带的 `pre-commit` 钩子会在提交前拦截疑似密钥
+- 首次进入时由使用者填自己的 Key，只存在**他本机的浏览器**（localStorage），不上传
+- 每次试衣时，浏览器把它随请求带给自己的服务端（`x-decart-key` 头），服务端用它换一次 **300 秒短期凭证**，用完即丢、不落盘、不写日志
+- 服务端若配置了 `DECART_API_KEY`，则作为兜底：访客没填 Key 时用服务端的
+- 静态资源走白名单：只放行 `src/` 下的前端资源，`.env`、`server.mjs` 一律 404
+- 仓库自带 `pre-commit` 钩子，提交前拦截任何形如 `dct_v1_...` 的字符串
 
 ```bash
 # 自检：确认仓库里没有密钥
 git grep -I -n "dct_v1_"
 ```
 
-⚠️ **Fork 或使用本项目时，请申请你自己的 Key。** 不要把任何人的密钥提交进仓库——包括测试用的。
+⚠️ **请使用你自己的 Key。** 不要把任何人的密钥提交进仓库——包括测试用的。
 
 ## 部署
 

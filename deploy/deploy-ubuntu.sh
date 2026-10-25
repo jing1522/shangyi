@@ -85,9 +85,11 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 # ---------- 5. API Key ----------
 if [[ ! -f "$APP_DIR/.env" ]]; then
-  printf '请粘贴 Decart API Key（dct_v1_ 开头，回车确认）: '
+  printf 'Decart API Key（直接回车 = 不配置，由访问者在页面上自己填）: '
   read -r APIKEY
-  [[ -n "$APIKEY" ]] || die "API Key 不能为空"
+  if [[ -z "$APIKEY" ]]; then
+    ok "未配置服务端 Key：访问者首次进入时填自己的（只存他的浏览器）"
+  fi
   cat > "$APP_DIR/.env" <<EOF
 DECART_API_KEY=$APIKEY
 TLS_CERT=$APP_DIR/certs/fullchain.pem

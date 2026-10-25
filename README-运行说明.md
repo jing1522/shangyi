@@ -10,7 +10,7 @@
 ├─ src/app.html         整个前端（单文件，样式+逻辑都在里面）
 ├─ server.mjs           后端：静态托管 + /api/decart-token，可选自带 HTTPS
 ├─ package.json         只有 start/dev 两个脚本，无任何依赖
-├─ .env.local           本机用的长期 API Key（不要提交、不要发人）
+├─ .env.local           可选：服务端统一的 Key（留空则由访问者自己在页面里填）
 ├─ 部署到云服务器.md      没有域名怎么上公网：IP 证书 / 隧道 / Docker
 └─ deploy/
    ├─ deploy-ubuntu.sh  一键部署（装 Node+certbot、申请 IP 证书、systemd）
@@ -19,7 +19,7 @@
    └─ .env.example
 ```
 
-## 一、本机跑起来（3 步）
+## 一、本机跑起来（2 步）
 
 ```powershell
 cd "D:\trea_game\闪衣 · AI实时试衣3"
@@ -27,7 +27,13 @@ npm start
 # 打开 http://127.0.0.1:5180
 ```
 
-首次会弹出摄像头授权，允许即可。AI 试衣需要摄像头画面，`127.0.0.1` 属于安全上下文，
+首次打开会先弹出**填 API Key** 的窗口：贴上你自己的 `dct_v1_...`，点「保存并开始」。
+它只存在这台设备的浏览器（localStorage）里，不上传、不写服务器；换设备或清了浏览器数据要重填一次。
+
+> 想让**所有访问者共用一把**（例如内网演示），把 Key 写进 `.env.local` 的 `DECART_API_KEY=`
+> 之后就不会再弹窗了——服务端有 Key 时优先用它，访客自带的 Key 仍然会被优先采用。
+
+接着会弹摄像头授权，允许即可。AI 试衣需要摄像头画面，`127.0.0.1` 属于安全上下文，
 浏览器允许 `http://127.0.0.1` 调摄像头；换成局域网 IP（如 `192.168.x.x`）就必须上 HTTPS。
 
 接口自检：
@@ -45,6 +51,9 @@ curl.exe -X POST http://127.0.0.1:5180/api/decart-token
 2. **换发短期 token**：Decart 的长期 Key（`dct_v1_...`）一旦出现在前端就等于公开，
    任何人 F12 就能抄走、刷你的额度。正确做法是长期 Key 只留在服务端，
    前端每次点击试衣时向自己的服务器要一个有效期 5 分钟的短期 token。
+3. **不自带 Key 也能跑（BYOK）**：仓库里没有任何密钥。服务端没配 `DECART_API_KEY` 时，
+   页面首次进入会要求访客填自己的 Key，由浏览器随请求带上 `x-decart-key` 头，
+   服务端只用它换一次短期 token，**不保存、不写日志、不落盘**。
 
 `server.mjs` 里做的事情就这两件：
 
@@ -112,10 +121,13 @@ Vercel / Netlify 同理：`api/decart-token.js` + 静态目录，环境变量里
 
 ## 四、安全提醒
 
-- `dct_v1_Hyiw...` 这个 Key 之前在 `app.html` 里是明文，已经随 HTML 传播过，
-  建议到 <https://platform.decart.ai> 后台**轮换/作废**这把 Key，再换新的到 `.env.local`。
-- `.env.local` 已列入 `.gitignore`；部署时用环境变量注入，别提交。
-- 根目录那个 `闪衣 · AI实时试衣3.zip` 是旧版本，里面还带着明文 Key，别再发人。
+- 仓库、页面、部署包里**都不含任何密钥**。前端只有「填 Key」的输入框，Key 存在访客自己的浏览器里。
+- `dct_v1_Hyiw...` 这把旧 Key 曾明文写在 `app.html` 里并随文件传播过，**已经全部清掉**
+  （源码、根目录副本、旧 zip 里的都删了）。但它曾经公开过，仍然建议去
+  <https://platform.decart.ai> 后台**轮换/作废**，之后用新 Key。
+- `.env.local`、`.env`、`*.pem` 都在 `.gitignore` 里；仓库还带了一个 `pre-commit` 钩子，
+  提交前会拦截任何形如 `dct_v1_...` 的字符串。
+- 服务端拿到访客的 Key 只用于换一次短期 token，用完即丢；日志里只记「来源：访客自带/服务端」。
 
 ## 五、常见问题
 
