@@ -1,10 +1,10 @@
 # 闪衣 · AI 实时试衣
 
-> Real-time AI virtual try-on in the browser — one garment photo in, a live try-on video out. No 3D modelling, no app install.
->
-> 用一张衣服图，让消费者在浏览器里实时“穿”上它。
+**一句话：功能就这么简短 —— 上传一张衣服图，在浏览器里实时穿到自己身上，10 秒定格前后对比。没有更多。**
 
-衣物图上传 → 实时换装（WebRTC 视频流）→ 10 秒定格前后对比。前端是一个单文件页面，后端是一个零依赖的 Node 服务，一台入门服务器即可跑起来。
+Real-time AI virtual try-on in the browser — one garment photo in, a live try-on video out. No 3D modelling, no app install.
+
+前端是一个单文件页面，后端是一个零依赖的 Node 服务，一台入门服务器就能跑起来。
 
 ## 它能做什么
 
